@@ -38,7 +38,7 @@ var nopt = require("nopt")
     "output"    : process.cwd(),
     "combine"   : undefined,
     "watch"     : false,
-    "namespace" : 'window.i18n',
+    "namespace" : 'i18n',
     "include"   : '**/*.json',
     "stdout"    : false,
     "verbose"   : false
@@ -156,11 +156,15 @@ function build(inputdir, options, callback){
         async.forEach(files, readFile, function(err){
           // errors are logged in readFile. No need to print them here.
           var fileData = [
-            '(function(){ ' + options.namespace + ' || (' + options.namespace + ' = {}) ',
+            '(function(){ var o = {};',
             'var MessageFormat = { locale: {} };',
             localeStr.toString().trim(),
             inclStr.toString().trim(),
           ].concat(compiledMessageFormat)
+          .concat([
+            'this["' + options.namespace + '"] = this["' + options.namespace + '"] || o;',
+            'if (typeof module !== "undefined" && module !== null) {module.exports = this["' + options.namespace + '"];}'
+          ])
           .concat(['})();']);
           return callback(null, _.flatten(fileData));
         });
@@ -200,12 +204,14 @@ function build(inputdir, options, callback){
 
 function compiler(options, nm, obj){
   var mf = new MessageFormat(options.locale),
-    cmf = [options.namespace + '["' + nm + '"] = {'];
+    cmf = ['o["' + nm + '"] = {'];
 
   _(obj).forEach(function(value, key){
     var str = mf.precompile( mf.parse(value) );
-    cmf.push('"' + key + '":' + str + ',');
+    cmf.push('  "' + key + '":' + str + ',');
   });
-  cmf[cmf.length-1] = cmf[cmf.length-1].replace(/,$/, '}');
+  cmf[cmf.length-1] = cmf[cmf.length-1].replace(/,$/, '');
+  cmf.push('};');
+
   return cmf;
 }
