@@ -162,7 +162,7 @@ function build(inputdir, options, callback){
             inclStr.toString().trim(),
           ].concat(compiledMessageFormat)
           .concat([
-            'this["' + options.namespace + '"] = this["' + options.namespace + '"] || o;',
+            'this["' + options.namespace + '"] = o;',
             'if (typeof module !== "undefined" && module !== null) {module.exports = this["' + options.namespace + '"];}'
           ])
           .concat(['})();']);
